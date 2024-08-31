@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Button } from "./ui/button";
 
 const DemographicFinancialForm = ({ onSubmit }) => {
@@ -12,8 +11,8 @@ const DemographicFinancialForm = ({ onSubmit }) => {
     annualIncome: '',
     age: '',
     dependents: '',
-    studentsInCollege: '',
-    dividends: ''
+    dividends: '',
+    capitalGains: ''
   });
 
   const [errors, setErrors] = useState({});
@@ -39,7 +38,6 @@ const DemographicFinancialForm = ({ onSubmit }) => {
     if (!formData.annualIncome) newErrors.annualIncome = 'Annual income is required';
     if (!formData.age) newErrors.age = 'Age is required';
     if (!formData.dependents) newErrors.dependents = 'Number of dependents is required';
-    if (!formData.studentsInCollege) newErrors.studentsInCollege = 'Students in college information is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -48,7 +46,7 @@ const DemographicFinancialForm = ({ onSubmit }) => {
     e.preventDefault();
     if (validateForm()) {
       console.log('Form submitted:', formData);
-      onSubmit(formData);  // Pass the form data to the parent component
+      onSubmit(formData);
     }
   };
 
@@ -114,21 +112,6 @@ const DemographicFinancialForm = ({ onSubmit }) => {
           </div>
 
           <div>
-            <Label>Students in College</Label>
-            <RadioGroup name="studentsInCollege" onValueChange={(value) => handleSelectChange('studentsInCollege', value)}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="yes" id="studentsYes" />
-                <Label htmlFor="studentsYes">Yes</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="no" id="studentsNo" />
-                <Label htmlFor="studentsNo">No</Label>
-              </div>
-            </RadioGroup>
-            {errors.studentsInCollege && <p className="text-red-500 text-sm">{errors.studentsInCollege}</p>}
-          </div>
-
-          <div>
             <Label htmlFor="dividends">Dividends (GBP)</Label>
             <Input
               type="number"
@@ -137,6 +120,18 @@ const DemographicFinancialForm = ({ onSubmit }) => {
               value={formData.dividends}
               onChange={handleChange}
               placeholder="Enter dividends"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="capitalGains">Capital Gains (GBP)</Label>
+            <Input
+              type="number"
+              id="capitalGains"
+              name="capitalGains"
+              value={formData.capitalGains}
+              onChange={handleChange}
+              placeholder="Enter capital gains"
             />
           </div>
 

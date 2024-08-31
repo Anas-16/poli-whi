@@ -10,18 +10,17 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-300 p-6 flex flex-col sm:flex-row items-start justify-center gap-6">
-      <div className="w-full sm:w-1/2 max-w-xl">
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-light-blue-500 shadow-lg transform -skew-y-6 sm:skew-y-0 sm:-rotate-6 sm:rounded-3xl"></div>
-          <div className="relative bg-gray-50 shadow-lg sm:rounded-3xl p-6">
-            <h1 className="text-2xl font-semibold text-center mb-6">Demographic and Financial Information</h1>
+    <div className="min-h-screen bg-gray-100 p-4">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold text-center mb-8">Tax Impact Calculator</h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div>
             <DemographicFinancialForm onSubmit={handleFormSubmit} />
           </div>
+          <div>
+            {userData && <PrimeMinisterImpact userData={userData} />}
+          </div>
         </div>
-      </div>
-      <div className="w-full sm:w-1/2 max-w-xl">
-        {userData && <PrimeMinisterImpact userData={userData} />}
       </div>
     </div>
   );

@@ -6,68 +6,128 @@ export function cn(...inputs) {
   return twMerge(clsx(inputs))
 }
 
-
-// Add the following tax calculation functions
-const TAX_BANDS = {
-  PERSONAL_ALLOWANCE: 12570,
-  BASIC_RATE_LIMIT: 50270,
-  HIGHER_RATE_LIMIT: 125140
+// 2019 baseline tax rates and thresholds
+const BASELINE_2019 = {
+  INCOME_TAX: {
+    PERSONAL_ALLOWANCE: 12500,
+    BASIC_RATE_LIMIT: 50000,
+    HIGHER_RATE_LIMIT: 150000,
+    BASIC_RATE: 0.20,
+    HIGHER_RATE: 0.40,
+    ADDITIONAL_RATE: 0.45
+  },
+  NIC: {
+    PRIMARY_THRESHOLD: 8632,
+    UPPER_EARNINGS_LIMIT: 50000,
+    BASIC_RATE: 0.12,
+    HIGHER_RATE: 0.02
+  },
+  DIVIDEND_TAX: {
+    ALLOWANCE: 2000,
+    BASIC_RATE: 0.075,
+    HIGHER_RATE: 0.325,
+    ADDITIONAL_RATE: 0.381
+  },
+  CAPITAL_GAINS_TAX: {
+    ALLOWANCE: 12000,
+    BASIC_RATE: 0.10,
+    HIGHER_RATE: 0.20
+  },
+  CHILD_BENEFIT: {
+    FIRST_CHILD: 20.70 * 52, // Weekly rate * 52 weeks
+    ADDITIONAL_CHILD: 13.70 * 52
+  }
 };
 
-const NIC_BANDS = {
-  PRIMARY_THRESHOLD: 12570,
-  UPPER_EARNINGS_LIMIT: 50270
-};
-
-const calculateIncomeTax = (income) => {
+const calculateBaselineTax = (income, dividends, capitalGains, dependents) => {
   let tax = 0;
-  if (income > TAX_BANDS.HIGHER_RATE_LIMIT) {
-    tax += (income - TAX_BANDS.HIGHER_RATE_LIMIT) * 0.45;
-    income = TAX_BANDS.HIGHER_RATE_LIMIT;
-  }
-  if (income > TAX_BANDS.BASIC_RATE_LIMIT) {
-    tax += (income - TAX_BANDS.BASIC_RATE_LIMIT) * 0.40;
-    income = TAX_BANDS.BASIC_RATE_LIMIT;
-  }
-  if (income > TAX_BANDS.PERSONAL_ALLOWANCE) {
-    tax += (income - TAX_BANDS.PERSONAL_ALLOWANCE) * 0.20;
-  }
-  return tax;
-};
+  let nicTax = 0;
+  let dividendTax = 0;
+  let cgTax = 0;
+  let childBenefit = 0;
 
-const calculateNIC = (income, rate = 0.12) => {
-  let nic = 0;
-  if (income > NIC_BANDS.UPPER_EARNINGS_LIMIT) {
-    nic += (income - NIC_BANDS.UPPER_EARNINGS_LIMIT) * 0.02;
-    income = NIC_BANDS.UPPER_EARNINGS_LIMIT;
+  // Income Tax
+  if (income > BASELINE_2019.INCOME_TAX.HIGHER_RATE_LIMIT) {
+    tax += (income - BASELINE_2019.INCOME_TAX.HIGHER_RATE_LIMIT) * BASELINE_2019.INCOME_TAX.ADDITIONAL_RATE;
+    tax += (BASELINE_2019.INCOME_TAX.HIGHER_RATE_LIMIT - BASELINE_2019.INCOME_TAX.BASIC_RATE_LIMIT) * BASELINE_2019.INCOME_TAX.HIGHER_RATE;
+    tax += (BASELINE_2019.INCOME_TAX.BASIC_RATE_LIMIT - BASELINE_2019.INCOME_TAX.PERSONAL_ALLOWANCE) * BASELINE_2019.INCOME_TAX.BASIC_RATE;
+  } else if (income > BASELINE_2019.INCOME_TAX.BASIC_RATE_LIMIT) {
+    tax += (income - BASELINE_2019.INCOME_TAX.BASIC_RATE_LIMIT) * BASELINE_2019.INCOME_TAX.HIGHER_RATE;
+    tax += (BASELINE_2019.INCOME_TAX.BASIC_RATE_LIMIT - BASELINE_2019.INCOME_TAX.PERSONAL_ALLOWANCE) * BASELINE_2019.INCOME_TAX.BASIC_RATE;
+  } else if (income > BASELINE_2019.INCOME_TAX.PERSONAL_ALLOWANCE) {
+    tax += (income - BASELINE_2019.INCOME_TAX.PERSONAL_ALLOWANCE) * BASELINE_2019.INCOME_TAX.BASIC_RATE;
   }
-  if (income > NIC_BANDS.PRIMARY_THRESHOLD) {
-    nic += (income - NIC_BANDS.PRIMARY_THRESHOLD) * rate;
+
+  // National Insurance Contributions
+  if (income > BASELINE_2019.NIC.UPPER_EARNINGS_LIMIT) {
+    nicTax += (income - BASELINE_2019.NIC.UPPER_EARNINGS_LIMIT) * BASELINE_2019.NIC.HIGHER_RATE;
+    nicTax += (BASELINE_2019.NIC.UPPER_EARNINGS_LIMIT - BASELINE_2019.NIC.PRIMARY_THRESHOLD) * BASELINE_2019.NIC.BASIC_RATE;
+  } else if (income > BASELINE_2019.NIC.PRIMARY_THRESHOLD) {
+    nicTax += (income - BASELINE_2019.NIC.PRIMARY_THRESHOLD) * BASELINE_2019.NIC.BASIC_RATE;
   }
-  return nic;
+
+  // Dividend Tax
+  if (dividends > BASELINE_2019.DIVIDEND_TAX.ALLOWANCE) {
+    const taxableDividends = dividends - BASELINE_2019.DIVIDEND_TAX.ALLOWANCE;
+    if (income > BASELINE_2019.INCOME_TAX.HIGHER_RATE_LIMIT) {
+      dividendTax += taxableDividends * BASELINE_2019.DIVIDEND_TAX.ADDITIONAL_RATE;
+    } else if (income > BASELINE_2019.INCOME_TAX.BASIC_RATE_LIMIT) {
+      dividendTax += taxableDividends * BASELINE_2019.DIVIDEND_TAX.HIGHER_RATE;
+    } else {
+      dividendTax += taxableDividends * BASELINE_2019.DIVIDEND_TAX.BASIC_RATE;
+    }
+  }
+
+  // Capital Gains Tax
+  if (capitalGains > BASELINE_2019.CAPITAL_GAINS_TAX.ALLOWANCE) {
+    const taxableGains = capitalGains - BASELINE_2019.CAPITAL_GAINS_TAX.ALLOWANCE;
+    if (income > BASELINE_2019.INCOME_TAX.BASIC_RATE_LIMIT) {
+      cgTax += taxableGains * BASELINE_2019.CAPITAL_GAINS_TAX.HIGHER_RATE;
+    } else {
+      cgTax += taxableGains * BASELINE_2019.CAPITAL_GAINS_TAX.BASIC_RATE;
+    }
+  }
+
+  // Child Benefit
+  if (dependents > 0) {
+    childBenefit += BASELINE_2019.CHILD_BENEFIT.FIRST_CHILD;
+    childBenefit += (dependents - 1) * BASELINE_2019.CHILD_BENEFIT.ADDITIONAL_CHILD;
+    // High Income Child Benefit Charge
+    if (income > 50000) {
+      const chargeRate = Math.min((income - 50000) / 100 / 100, 1);
+      childBenefit *= (1 - chargeRate);
+    }
+  }
+
+  return { tax, nicTax, dividendTax, cgTax, childBenefit };
 };
 
 export const calculateNetChange = (userData, pmPolicies) => {
-  const { annualIncome } = userData;
+  const { annualIncome, dividends, capitalGains, dependents } = userData;
   const income = Number(annualIncome);
-  const currentTax = calculateIncomeTax(income);
-  const currentNIC = calculateNIC(income);
+  const dividendsAmount = Number(dividends) || 0;
+  const capitalGainsAmount = Number(capitalGains) || 0;
+  const dependentsCount = Number(dependents) || 0;
+
+  const baseline = calculateBaselineTax(income, dividendsAmount, capitalGainsAmount, dependentsCount);
+  const baselineTotalTax = baseline.tax + baseline.nicTax + baseline.dividendTax + baseline.cgTax - baseline.childBenefit;
 
   return pmPolicies.map(pm => {
-    let newTax = currentTax + pm.incomeTaxChange(income);
-    let newNIC = currentNIC + pm.nationalInsuranceChange(income);
-    
-    const taxChange = currentTax - newTax;
-    const nicChange = currentNIC - newNIC;
-    const netChange = taxChange + nicChange;
-    
+    const pmTax = pm.incomeTaxChange(income);
+    const pmNIC = pm.nationalInsuranceChange(income);
+    const pmDividendTax = pm.dividendTaxChange(dividendsAmount);
+    const pmCapitalGainsChange = pm.capitalGainsChange(capitalGainsAmount);
+    const pmDependentBenefit = pm.dependentBenefit(dependentsCount);
+
+    const totalTaxUnderPM = baselineTotalTax + pmTax + pmNIC + pmDividendTax + pmCapitalGainsChange - pmDependentBenefit;
+    const netChange = baselineTotalTax - totalTaxUnderPM;
+
     const detailedBreakdown = {
-      "Current Income Tax": currentTax,
-      "New Income Tax": newTax,
-      "Current NIC": currentNIC,
-      "New NIC": newNIC,
-      "Tax Savings": taxChange,
-      "NIC Savings": nicChange
+      "Income Tax Change": -pmTax,
+      "NIC Change": -pmNIC,
+      "Dividend Tax Change": -pmDividendTax,
+      "Capital Gains Tax Change": -pmCapitalGainsChange,
+      "Dependent Benefits": pmDependentBenefit
     };
 
     return {
@@ -78,9 +138,3 @@ export const calculateNetChange = (userData, pmPolicies) => {
     };
   });
 };
-
-// Remove or comment out the unused function
-// function calculateTaxImpact({ income, capitalGains }) {
-//   // Use the variables in your calculations or remove them if not needed
-//   // ... rest of the function
-// }
